@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A Pomodoro focus timer with ambient sound, a progress ring you drag to scrub, and an energy meter that tires as you work and recovers on your break.">
+    <meta name="theme-color" content="#0B0B0D">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%85%3C/text%3E%3C/svg%3E">
+    <title>Focus Timer</title>
+    <script>document.documentElement.classList.add("js");</script>
+    <link rel="stylesheet" href="timer.css">
+</head>
+<body class="focus-mode">
+
+<div class="bg-layers" aria-hidden="true">
+    <div class="bg-layer bg-focus"></div>
+    <div class="bg-layer bg-break"></div>
+</div>
+<div class="bg-animation" id="bgAnimation" aria-hidden="true"></div>
+
+<header class="topbar">
+    <h1 class="topbar__title">Focus Timer</h1>
+    <div class="topbar__right">
+        <p class="mode-badge" id="modeBadge"><span class="mode-badge__dot"></span>Focus</p>
+        <a class="topbar__link" href="/">Classic UI</a>
+    </div>
+</header>
+
+<main class="stage">
+
+    <section class="dial" aria-label="Session timer">
+        <div class="ring-shell" id="ringShell">
+            <svg class="ring" viewBox="0 0 280 280" tabindex="0" role="slider"
+                 aria-label="Session progress. Drag the arc or use arrow keys to scrub."
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                 id="ring">
+                <circle class="ring__track" cx="140" cy="140" r="135"></circle>
+                <circle class="ring__ticks" cx="140" cy="140" r="118"></circle>
+                <circle class="ring__fill" cx="140" cy="140" r="135" id="ringFill"></circle>
+                <circle class="ring__knob" r="9" id="ringKnob"></circle>
+            </svg>
+
+            <div class="readout">
+                <p class="clock" id="clock" aria-hidden="true">
+                    <span class="digit"><span class="digit__stack" data-digit="0"></span></span>
+                    <span class="digit"><span class="digit__stack" data-digit="1"></span></span>
+                    <span class="clock__colon">:</span>
+                    <span class="digit"><span class="digit__stack" data-digit="2"></span></span>
+                    <span class="digit"><span class="digit__stack" data-digit="3"></span></span>
+                </p>
+                <p class="visually-hidden" id="timerDisplay">25:00</p>
+                <p class="readout__hint" id="ringHint">drag the arc</p>
+            </div>
+        </div>
+
+        <div class="sessions">
+            <span class="sessions__dot is-on" data-dot></span>
+            <span class="sessions__dot" data-dot></span>
+            <span class="sessions__dot" data-dot></span>
+            <span class="sessions__dot" data-dot></span>
+            <span class="sessions__label" id="sessionLabel">Session 1 of 4</span>
+        </div>
+    </section>
+
+    <section class="panel" aria-label="Controls">
+
+        <!-- Energy: tires through focus, recovers through the break -->
+        <div class="energy" id="energy">
+            <svg class="face" viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="face__head" cx="50" cy="50" r="34"></circle>
+                <g id="faceFeatures">
+                    <ellipse class="face__eye" id="eyeL" cx="38" cy="45" rx="3.6" ry="5"></ellipse>
+                    <ellipse class="face__eye" id="eyeR" cx="62" cy="45" rx="3.6" ry="5"></ellipse>
+                    <path class="face__brow" id="browL" d="M32 36 L44 36"></path>
+                    <path class="face__brow" id="browR" d="M68 36 L56 36"></path>
+                    <path class="face__mouth" id="mouth" d="M38 62 Q50 70 62 62"></path>
+                </g>
+            </svg>
+
+            <div class="energy__meta">
+                <p class="energy__label">Energy</p>
+                <p class="energy__value"><span id="energyPct">100</span><span class="energy__unit">%</span></p>
+                <div class="energy__bar"><span id="energyFill"></span></div>
+                <p class="energy__state" id="energyState">Fresh</p>
+            </div>
+        </div>
+
+        <p class="elapsed" id="elapsed">00:00 elapsed of 25:00</p>
+
+        <div class="panel__actions">
+            <button class="btn btn--primary" type="button" id="startBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Start
+            </button>
+            <button class="btn btn--ghost" type="button" id="resetBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                Reset
+            </button>
+        </div>
+
+        <div class="seg" role="group" aria-label="Session type">
+            <span class="seg__indicator" aria-hidden="true"></span>
+            <button type="button" id="focusModeBtn" aria-pressed="true">Focus</button>
+            <button type="button" id="breakModeBtn" aria-pressed="false">Break</button>
+        </div>
+
+        <div class="durations">
+            <div class="field">
+                <label for="focusTimeInput">Focus</label>
+                <div class="field__input">
+                    <input type="number" id="focusTimeInput" inputmode="numeric" min="1" max="120" step="1" value="25">
+                    <span>min</span>
+                </div>
+            </div>
+            <div class="field">
+                <label for="breakTimeInput">Break</label>
+                <div class="field__input">
+                    <input type="number" id="breakTimeInput" inputmode="numeric" min="1" max="60" step="1" value="5">
+                    <span>min</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="sound-row">
+            <button class="sound-btn" type="button" id="soundToggle" aria-pressed="true" aria-label="Mute ambient sound">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+            <label class="visually-hidden" for="volumeSlider">Ambient volume</label>
+            <div class="vol-wrap">
+                <span class="vol-fill" id="volFill"></span>
+                <input type="range" class="vol" id="volumeSlider" min="0" max="100" step="1" value="50">
+            </div>
+            <span class="vol-label" id="volumeLabel" aria-hidden="true">50%</span>
+        </div>
+
+        <p class="panel__status" id="status" role="status">Paused at the start of a 25 minute focus session.</p>
+        <p class="panel__keys">Press <kbd>Space</kbd> to start or pause, <kbd>R</kbd> to reset</p>
+    </section>
+
+</main>
+
+<div class="visually-hidden" id="announcer" role="status" aria-live="polite"></div>
+
+<script type="module" src="timer.js"></script>
+</body>
+</html>

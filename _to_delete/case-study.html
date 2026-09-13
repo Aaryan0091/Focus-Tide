@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A UI engineering case study: building a Pomodoro focus timer, auditing it against measured evidence, and rebuilding what the numbers exposed.">
+    <meta name="theme-color" content="#0B0B0D">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%85%3C/text%3E%3C/svg%3E">
+    <title>Measuring a focus timer · Aaryan Gupta</title>
+    <script>document.documentElement.classList.add("js");</script>
+    <link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+<div class="scroll-rail" aria-hidden="true"><span class="scroll-rail__fill"></span></div>
+
+<header class="nav">
+    <a class="nav__brand" href="#top">Aaryan Gupta</a>
+    <nav class="nav__links" aria-label="Primary">
+        <a href="/">Timer app</a>
+        <a class="nav__cta" href="mailto:aaryangupta2005@gmail.com">Email me</a>
+    </nav>
+</header>
+
+<main id="top">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+        <div class="hero__copy">
+            <p class="eyebrow reveal">UI engineering case study</p>
+            <h1 class="hero__title reveal" style="--d:1">
+                I built a focus timer.<br>Then I measured it.
+            </h1>
+            <p class="hero__sub reveal" style="--d:2">
+                Fourteen defects found by measurement, not opinion. Contrast at 1.18:1. A transition that never ran.
+            </p>
+            <div class="hero__actions reveal" style="--d:3">
+                <a class="btn btn--primary" href="#instrument">Try the timer</a>
+                <a class="btn btn--ghost" href="#audit">See the findings</a>
+            </div>
+        </div>
+
+        <div class="hero__stage reveal" style="--d:2">
+            <div class="ring-shell" data-ring-shell>
+                <svg class="ring" viewBox="0 0 280 280" tabindex="0" role="slider"
+                     aria-label="Session progress. Drag or use arrow keys to scrub."
+                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                     data-ring>
+                    <defs>
+                        <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#E0A458"/>
+                            <stop offset="100%" stop-color="#F2C98A"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="ring__track" cx="140" cy="140" r="135"></circle>
+                    <circle class="ring__ticks" cx="140" cy="140" r="118"></circle>
+                    <circle class="ring__fill" cx="140" cy="140" r="135" data-ring-fill></circle>
+                    <circle class="ring__knob" r="9" data-ring-knob></circle>
+                </svg>
+                <div class="ring__readout">
+                    <p class="ring__time" data-ring-time>25:00</p>
+                    <p class="ring__hint">drag the arc</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ LIVE INSTRUMENT ============ -->
+    <section class="instrument" id="instrument">
+        <div class="instrument__head reveal">
+            <h2>The ring is the control, not a readout</h2>
+            <p>
+                Most timers make the progress arc decorative. Here it is the input. Drag anywhere on the
+                arc to move through the session, or focus it and use the arrow keys. The clock follows the angle.
+            </p>
+        </div>
+
+        <div class="instrument__panel reveal">
+            <div class="ring-shell ring-shell--lg" data-ring-shell>
+                <svg class="ring" viewBox="0 0 280 280" tabindex="0" role="slider"
+                     aria-label="Session progress. Drag or use arrow keys to scrub."
+                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+                     data-ring>
+                    <circle class="ring__track" cx="140" cy="140" r="135"></circle>
+                    <circle class="ring__ticks" cx="140" cy="140" r="118"></circle>
+                    <circle class="ring__fill" cx="140" cy="140" r="135" data-ring-fill></circle>
+                    <circle class="ring__knob" r="10" data-ring-knob></circle>
+                </svg>
+                <div class="ring__readout">
+                    <p class="ring__time" data-ring-time>25:00</p>
+                    <p class="ring__mode" data-ring-mode>Focus</p>
+                </div>
+            </div>
+
+            <div class="instrument__controls">
+                <button class="btn btn--primary" type="button" data-act="toggle">Start</button>
+                <button class="btn btn--ghost" type="button" data-act="reset">Reset</button>
+                <div class="seg" role="group" aria-label="Session type">
+                    <button type="button" data-act="focus" aria-pressed="true">Focus</button>
+                    <button type="button" data-act="break" aria-pressed="false">Break</button>
+                </div>
+                <div class="sound-row">
+                    <button class="sound-btn" type="button" data-act="mute" aria-pressed="true" aria-label="Mute ambient sound">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                    </button>
+                    <label class="visually-hidden" for="csVolume">Ambient volume</label>
+                    <input type="range" class="vol" id="csVolume" min="0" max="100" step="1" value="50">
+                    <span class="vol-label" data-vol-label aria-hidden="true">50%</span>
+                </div>
+                <p class="instrument__note" data-ring-status role="status">Paused at the start of a 25 minute session.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ V1 NARRATIVE ============ -->
+    <section class="prose" id="v1">
+        <h2 class="reveal">What the first version got wrong</h2>
+        <div class="prose__cols">
+            <p class="reveal">
+                The first build looked finished. Glass card, animated rain, a progress ring, two colour modes that
+                swapped on a three second transition. Screenshot it and you would call it done.
+            </p>
+            <p class="reveal">
+                It was not done. I opened it in a browser, measured the live DOM instead of trusting my eyes, and
+                found fourteen defects. Several were invisible in a screenshot and obvious in a number.
+            </p>
+            <p class="reveal">
+                The headline failure: the three second colour fade I was proudest of never executed a single frame.
+                CSS cannot interpolate between two <code>linear-gradient()</code> values, so the browser skipped the
+                property entirely. I had been looking at a hard cut for weeks and reading it as a fade because I
+                knew what it was supposed to do.
+            </p>
+            <p class="reveal">
+                That is the argument for measuring. Familiarity with your own work is the thing that stops you
+                seeing it.
+            </p>
+        </div>
+    </section>
+
+    <!-- ============ AUDIT BENTO ============ -->
+    <section class="audit" id="audit">
+        <div class="audit__head reveal">
+            <p class="eyebrow">Measured, not guessed</p>
+            <h2>Six of the fourteen</h2>
+        </div>
+
+        <div class="bento">
+            <article class="bento__cell bento__cell--lg bento__cell--warm reveal">
+                <p class="stat" data-count="1.18" data-decimals="2">0.00</p>
+                <p class="stat__unit">:1 contrast</p>
+                <h3>Break mode text was invisible</h3>
+                <p>
+                    White text on the warm gradient measured between 1.18:1 and 1.91:1 against its own card.
+                    WCAG AA needs 4.5:1. This panel uses the original palette so you can see it.
+                </p>
+                <p class="bento__demo">Session 1 of 4</p>
+                <p class="bento__caption">The chip above is the original treatment, untouched.</p>
+            </article>
+
+            <article class="bento__cell reveal">
+                <p class="stat" data-count="0">0</p>
+                <p class="stat__unit">media queries</p>
+                <h3>No responsive rules at all</h3>
+                <p>43 CSS rules, zero breakpoints. Every mobile behaviour was accidental.</p>
+            </article>
+
+            <article class="bento__cell bento__cell--cool reveal">
+                <p class="stat"><span data-count="3">0</span>s</p>
+                <p class="stat__unit">declared, 0 frames run</p>
+                <h3>The transition that never was</h3>
+                <p>
+                    <code>getAnimations()</code> returned an empty array through the whole switch. The gradient
+                    swapped at frame zero.
+                </p>
+            </article>
+
+            <article class="bento__cell reveal">
+                <p class="stat">1</p>
+                <p class="stat__unit">forever</p>
+                <h3>Session counter froze</h3>
+                <p>
+                    The display was clamped but the variable was not, so from the fifth session it read
+                    <span class="mono">1</span> permanently.
+                </p>
+            </article>
+
+
+            <article class="bento__cell reveal">
+                <p class="stat"><span data-count="8">0</span>px</p>
+                <p class="stat__unit">hit target</p>
+                <h3>The volume slider</h3>
+                <div class="slider-demo" aria-hidden="true"><span></span></div>
+                <p>Eight pixels wide, built on a CSS keyword Chrome warns about on load.</p>
+            </article>
+            <article class="bento__cell bento__cell--wide reveal">
+                <p class="stat mono">999:00</p>
+                <p class="stat__unit">accepted from a typed input</p>
+                <h3>Duration inputs did not clamp</h3>
+                <p>
+                    <span class="mono">min</span> and <span class="mono">max</span> only gate the spinner and form
+                    validation. Typed straight in, <span class="mono">999</span> produced a 999 minute session and
+                    <span class="mono">-5</span> produced a negative clock.
+                </p>
+            </article>
+        </div>
+    </section>
+
+    <!-- ============ DECISIONS ============ -->
+    <section class="decisions" id="decisions">
+        <h2 class="decisions__title reveal">Three that mattered</h2>
+
+        <article class="decision reveal">
+            <div class="decision__body">
+                <h3>Cross-fade two layers instead of one property</h3>
+                <p>
+                    Gradients are not interpolable, so the fix was structural rather than a tweak. Two stacked
+                    layers, each holding one palette, cross-faded on <span class="mono">opacity</span>. Opacity is
+                    compositor friendly, so the fade costs nothing on the main thread.
+                </p>
+                <p class="decision__proof">The ink crosses on the same clock. Flipping it at frame zero left the timer unreadable mid-switch.</p>
+            </div>
+            <div class="decision__demo">
+                <div class="fade-demo" data-fade-demo>
+                    <div class="fade-demo__layer fade-demo__layer--focus"></div>
+                    <div class="fade-demo__layer fade-demo__layer--break"></div>
+                    <button class="fade-demo__btn" type="button" data-fade-toggle>Switch mode</button>
+                </div>
+            </div>
+        </article>
+
+        <article class="decision decision--flip reveal">
+            <div class="decision__body">
+                <h3>Break mode flips the ink, not the background</h3>
+                <p>
+                    The instinct is to darken the warm gradient. That kills the feeling the mode exists for. Instead
+                    every colour became a token, and break mode redefines the token set to dark ink on a stronger
+                    card tint. Same warmth, readable text.
+                </p>
+                <p class="decision__proof">Worst case moved from 1.18:1 to 5.32:1. Best case reads 11.96:1.</p>
+            </div>
+            <div class="decision__demo">
+                <div class="contrast-demo" data-contrast-demo>
+                    <div class="contrast-demo__card">
+                        <p class="contrast-demo__time">05:00</p>
+                        <p class="contrast-demo__label">Session 1 of 4</p>
+                    </div>
+                    <button class="contrast-demo__btn" type="button" data-contrast-toggle>Show the original</button>
+                </div>
+            </div>
+        </article>
+
+        <article class="decision decision--full reveal">
+            <div class="decision__body">
+                <h3>Trust the clock, not the tick</h3>
+                <p>
+                    The original decremented a counter once per interval. Browsers throttle inactive tabs to roughly
+                    one tick a minute, so a 25 minute session run in a background tab could finish minutes late,
+                    which is the one thing a focus timer cannot do. The rebuild stores a wall clock deadline and
+                    derives the remaining time from it on every tick. Throttling now costs display smoothness and
+                    nothing else.
+                </p>
+            </div>
+            <div class="drift" aria-hidden="true">
+                <div class="drift__row">
+                    <span class="drift__label">Counter per tick</span>
+                    <span class="drift__bar drift__bar--bad"><i></i></span>
+                    <span class="drift__val mono">drifts</span>
+                </div>
+                <div class="drift__row">
+                    <span class="drift__label">Deadline derived</span>
+                    <span class="drift__bar drift__bar--good"><i></i></span>
+                    <span class="drift__val mono">exact</span>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- ============ RESULTS ============ -->
+    <section class="results" id="results">
+        <h2 class="reveal">Before and after</h2>
+        <div class="results__grid">
+            <div class="result reveal">
+                <p class="result__name">Break mode contrast</p>
+                <p class="result__pair"><span class="result__before mono">1.18:1</span><span class="result__arrow" aria-hidden="true">→</span><span class="result__after mono">11.96:1</span></p>
+            </div>
+            <div class="result reveal">
+                <p class="result__name">Responsive breakpoints</p>
+                <p class="result__pair"><span class="result__before mono">0</span><span class="result__arrow" aria-hidden="true">→</span><span class="result__after mono">4</span></p>
+            </div>
+            <div class="result reveal">
+                <p class="result__name">Mode transition</p>
+                <p class="result__pair"><span class="result__before mono">0 frames</span><span class="result__arrow" aria-hidden="true">→</span><span class="result__after mono">1.4s fade</span></p>
+            </div>
+            <div class="result reveal">
+                <p class="result__name">Session counter</p>
+                <p class="result__pair"><span class="result__before mono">stuck at 1</span><span class="result__arrow" aria-hidden="true">→</span><span class="result__after mono">cycles 1 to 4</span></p>
+            </div>
+            <div class="result reveal">
+                <p class="result__name">Smallest touch target</p>
+                <p class="result__pair"><span class="result__before mono">8px</span><span class="result__arrow" aria-hidden="true">→</span><span class="result__after mono">44px</span></p>
+            </div>
+            <div class="result reveal">
+                <p class="result__name">Console on load</p>
+                <p class="result__pair"><span class="result__before mono">1 error, 1 warning</span><span class="result__arrow" aria-hidden="true">→</span><span class="result__after mono">clean</span></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ NEXT ============ -->
+    <section class="next" id="next">
+        <h2 class="reveal">What I would do next</h2>
+        <div class="next__cols">
+            <div class="reveal">
+                <h3>Long break after the fourth session</h3>
+                <p>The counter says "of 4" and nothing happens at four. That is an incomplete feature, not a bug, so it did not go in this pass.</p>
+            </div>
+            <div class="reveal">
+                <h3>Generate the rain instead of shipping it</h3>
+                <p>25MB of audio for ambient noise is indefensible. Filtered noise through the Web Audio API would weigh nothing and sound better.</p>
+            </div>
+            <div class="reveal">
+                <h3>Test with people who are actually working</h3>
+                <p>Everything here is measurement. None of it tells me whether the rain helps anyone concentrate, which is the only question that finally matters.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ CONTACT ============ -->
+    <section class="contact" id="contact">
+        <h2 class="reveal">Open to product design and design engineering roles</h2>
+        <p class="reveal">
+            I design interfaces and build them, and I would rather measure a decision than defend it.
+        </p>
+        <a class="btn btn--primary btn--lg reveal" href="mailto:aaryangupta2005@gmail.com">Email me</a>
+    </section>
+</main>
+
+<footer class="foot">
+    <p>Aaryan Gupta</p>
+    <p><a href="/">Timer app</a></p>
+    <!-- TODO: add GitHub and LinkedIn URLs here once you want them public -->
+</footer>
+
+<script type="module" src="case-study.js"></script>
+</body>
+</html>
