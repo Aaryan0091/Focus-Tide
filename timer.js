@@ -83,11 +83,6 @@ function currentFatigue() {
         : baseFatigue * (1 - s.progress);
 }
 
-/** Called before any mode change so the next session starts where this one ended. */
-function anchorFatigue() {
-    baseFatigue = Math.min(1, Math.max(0, currentFatigue()));
-}
-
 const STATES = [
     [0.12, 'Fresh'],
     [0.32, 'Steady'],
@@ -355,6 +350,13 @@ timer.on('finish', ({ finishedFocus }) => {
     audio.stop();
     audio.chime();
 
+    // The timer engine has already moved to the next mode when this event
+    // fires. Carry the completed session's final emotional state into that
+    // new mode: a finished focus starts the break fully spent, while a
+    // finished break starts the next focus fully recovered. Break progress
+    // then drains fatigue from 1 to 0 in lockstep with the countdown.
+    baseFatigue = finishedFocus ? 1 : 0;
+
     if (!reduceMotion) {
         el.ringShell.classList.remove('is-complete');
         void el.ringShell.offsetWidth;   // restart the animation
@@ -408,7 +410,10 @@ el.start.addEventListener('click', () => timer.toggle());
 el.reset.addEventListener('click', () => timer.reset());
 
 function switchMode(toFocus) {
-    anchorFatigue();          // carry the tiredness across the boundary
+    // A new break always begins fully exhausted (0% energy), even when the
+    // visitor switches modes manually. A new focus begins fully recovered.
+    // This keeps manual and automatic mode changes on the same boundaries.
+    baseFatigue = toFocus ? 0 : 1;
     timer.pause();
     audio.stop();
     timer.setMode(toFocus);
